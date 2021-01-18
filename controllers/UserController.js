@@ -1,5 +1,6 @@
 const database = require("../database/connection");
 const baseInformation = {table:"usuario", modulus: "Usuário"};
+const jwt = require('jsonwebtoken');
 
 class UserController {
 
@@ -38,6 +39,32 @@ class UserController {
             response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
         }).catch(error => console.error(error));
     }
+    async login(request, response) {
+        const {email, senha} = request.body;
+
+        const result = await database.select("*").from(`${baseInformation.table}`).where({email:email, senha:senha}).then(result=> 
+            result[0]
+        ).catch(error=> console.error(error));
+
+        if(result) {
+            const {codigoUsuario} = result
+            const token = jwt.sign({ codigoUsuario }, process.env.SECRET, {
+              expiresIn: "1d" // expires in 5min
+            });
+            return response.send({ auth: true, token: token });
+        }
+
+        response.status(401).json({ message: 'Login inválido!' });
+        // if(request.query.fail)
+        //     response.render('login', {message: "Usuario ou senha errados"})
+        // else 
+        //     response.render('login', {message:null})
+    }
+    async logout(request, response) {
+        console.log("Esta passando");
+        return response.send({ auth: false, token: null });
+    }
+
 }
 
 module.exports = new UserController();
