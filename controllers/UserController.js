@@ -54,7 +54,7 @@ class UserController {
             return response.send({ auth: true, token: token });
         }
 
-        response.status(401).json({ message: 'Login inválido!' });
+        return response.send({ auth: false });
         // if(request.query.fail)
         //     response.render('login', {message: "Usuario ou senha errados"})
         // else 

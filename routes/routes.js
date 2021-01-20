@@ -3,9 +3,12 @@ const modulusRoute = require("./modulusRoute");
 require("dotenv-safe").config();
 const jwt = require('jsonwebtoken');
 
+
 //Armazenamento
 const path = require("path");
-const multer  = require('multer')
+const multer  = require('multer');
+const aws = require("aws-sdk");
+const multerS3 = require("multer-s3");
 
 // //Auht
 // const passport = require("passport");
@@ -30,13 +33,33 @@ const storage = multer.diskStorage({
       cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
    }
 });
+
+const storageS3 = multerS3({
+   s3: new aws.S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+   }),
+   bucket: process.env.BUCKET_NAME,
+   contentType: multerS3.AUTO_CONTENT_TYPE,
+   acl: "public-read",
+   key: (req, file, cb) => {  
+     cb(null, "Arquivo-" + Date.now() + path.extname(file.originalname));
+   },
+});
+
+
 const upload = multer({
    storage: storage,
    limits:{fileSize: 1000000},
 }).single("arquivo");
 
-router.post(`/inserirArquivo`, upload, FileController.insert);
-router.put(`/atualizarArquivo/:codigoArquivo`, upload, FileController.update);
+const uploadS3 = multer({
+   storage: storageS3,
+   limits:{fileSize: 1000000},
+}).single("arquivo");
+
+router.post(`/inserirArquivo`, uploadS3, FileController.insert);
+router.put(`/atualizarArquivo/:codigoArquivo`, uploadS3, FileController.update);
 
 
 router.get(`/listarArquivosPorUsuario/:codigoUsuario`, FileController.getByCodigoUsuario);

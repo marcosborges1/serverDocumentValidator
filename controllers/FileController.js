@@ -29,10 +29,17 @@ class FileController {
 
     insert(request, response) {
 
+        // console.log(request.file);
+        // console.log(request.body);
        const {codigoUsuario, nome} = request.body;
-       const arquivo = request.file.filename;
+       //Local
+       // const arquivo = request.file.filename;
+       //Nuvem
+       const arquivo = request.file.key;
+       const url = request.file.location;
+
        const cripto = Crypto.encrypt(arquivo);
-        database.insert({codigoUsuario, nome, arquivo, cripto}).into(`${baseInformation.table}`).then(result=> {
+        database.insert({codigoUsuario, nome, arquivo, cripto, url}).into(`${baseInformation.table}`).then(result=> {
             response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
         }).catch(error => console.error(error));
     }
