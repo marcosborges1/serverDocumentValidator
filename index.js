@@ -16,7 +16,6 @@ app.use(express.static('public'));
 
 app.get("/", (request, response)=> {response.send("<h4>Servidor Funcionando...</h4>")});
 
-
 app.listen(config.port, () => {
   console.log(`Servidor rodando na porta ${config.port}`);
 });

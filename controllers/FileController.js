@@ -99,6 +99,13 @@ class FileController {
             response.json({message:`${baseInformation.modulus}(s) excluído(s) com sucesso!`})
         }).catch(error => console.error(error));
     }
+    verifyFileOnDb(request, response) {
+
+       const {arquivo} = request.body;
+        database.select("arquivo","cripto").from(`${baseInformation.table}`).where({arquivo}).then(result=> {
+            response.json(result)
+        }).catch(error => console.error(error));
+    }
 }
 
 module.exports = new FileController();
