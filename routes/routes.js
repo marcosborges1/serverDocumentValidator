@@ -65,47 +65,6 @@ router.put(`/atualizarArquivo/:codigoArquivo`, uploadS3, FileController.update);
 router.get(`/listarArquivosPorUsuario/:codigoUsuario`, FileController.getByCodigoUsuario);
 router.delete(`/excluirArquivosPorUsuario/:codigoUsuario`, FileController.deleteByCodigoUsuario);
 
-
-
-// require("../auth")(passport)
-// router.use(session({
-//    secret: '123',
-//    resave:false,
-//    saveUninitialized:false,
-//    cookie: {
-//       maxAge: 2 * 60 * 1000
-//    }
-// }));
-// router.use(passport.initialize());
-// router.use(passport.session());
-
-// router.get(`/login`, (req,res)=> {
-//    if(req.isAuthenticated()) { 
-//       console.log(req.session.passport.user);
-//       console.log("autenticado!")
-//    }
-//    else {
-//       console.log("não autenticado!")
-//    }
-//    return res.send(req.query.result)
-// })
-// router.post(`/login`, passport.authenticate('local', {
-//    successRedirect:"/login?result=true",
-//    failureRedirect:"/login?result=false"
-// }))
-
-// function authenticationMiddleware(req, res, next) {
-//   if (req.isAuthenticated()) return next();
-//    res.redirect('/login?fail=true');
-// }
-// router.get(`/isAuthenticated`, (req,res)=> {
-//    if (req.isAuthenticated()) {
-//       return res.send(true);
-//    }
-//    return res.send(false);
-
-// })
-
 function verifyJWT(request, response, next) {
 
    var token = request.headers['x-access-token'];
@@ -124,6 +83,7 @@ router.get('/isAuthenticated', verifyJWT, (request, response, next) => {
 })
 
 router.post(`/login`, UserController.login)
+router.post(`/verificarEmail`, UserController.verificarEmail)
 router.get(`/logout`, verifyJWT, UserController.logout)
 
 const validation = require("../models/validacao")

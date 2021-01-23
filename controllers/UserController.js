@@ -1,6 +1,7 @@
 const database = require("../database/connection");
 const baseInformation = {table:"usuario", modulus: "Usuário"};
 const jwt = require('jsonwebtoken');
+const FileController = require("./FileController");
 
 class UserController {
 
@@ -19,22 +20,27 @@ class UserController {
     }
     insert(request, response) {
 
-        const {nome,identificacao, email, senha} = request.body;
-        database.insert({nome,identificacao, email, senha}).into(`${baseInformation.table}`).then(result=> {
+        const {nome,identificacao, email, senha, tipo} = request.body;
+        database.insert({nome,identificacao, email, senha, tipo}).into(`${baseInformation.table}`).then(result=> {
             response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
         }).catch(error => console.error(error));
     }
     update(request, response) {
 
         const {codigoUsuario} = request.params;
-        const {nome,identificacao, email, senha } = request.body;
-        database.update({nome,identificacao, email, senha}).from(`${baseInformation.table}`).where({codigoUsuario}).then(usuario=> {
+        const {nome,identificacao, email, senha, tipo } = request.body;
+        database.update({nome,identificacao, email, senha, tipo}).from(`${baseInformation.table}`).where({codigoUsuario}).then(usuario=> {
             response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
         }).catch(error => console.error(error));
     }
-    delete(request, response) {
+    async delete(request, response) {
 
         const {codigoUsuario} = request.params;
+
+        //Apagar arquivos do S3
+        FileController.deleFilesS3ByUser(codigoUsuario);
+
+        //Apagar o usuário. Observação: já tem as restrições de cascata (on update, on delete)
         database.delete().from(`${baseInformation.table}`).where({codigoUsuario}).then(result=> {
             response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
         }).catch(error => console.error(error));
@@ -55,10 +61,20 @@ class UserController {
         }
 
         return response.send({ auth: false });
-        // if(request.query.fail)
-        //     response.render('login', {message: "Usuario ou senha errados"})
-        // else 
-        //     response.render('login', {message:null})
+    }
+    async verificarEmail(request, response) {
+        const {email} = request.body;
+
+        const result = await database.select("*").from(`${baseInformation.table}`).where({email:email}).then(result=> {
+            return result[0];
+        }).catch(error=> console.error(error));
+
+        if(result) { 
+            return response.json({ exist: true }); 
+        }
+        else {
+            response.json({ exist: false });
+        }
     }
     async logout(request, response) {
         console.log("Esta passando");

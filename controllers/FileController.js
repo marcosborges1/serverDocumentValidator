@@ -2,6 +2,11 @@ const database = require("../database/connection");
 const baseInformation = {table:"arquivo", modulus: "Arquivo"};
 const Crypto = require("../utils/Crypto")
 const fs = require('fs')
+const aws = require("aws-sdk");
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
 
 class FileController {
 
@@ -73,24 +78,44 @@ class FileController {
             response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
         }).catch(error => console.error(error));
     }
-    delete(request, response) {
+    async delete(request, response) {
 
         const {codigoArquivo} = request.params;
 
         //Remover Arquivo
-        database.select("arquivo").from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> 
-            fs.unlink(`uploads/${result[0]["arquivo"]}`, (err) => {
-              if (err) {
-                console.error(err)
-                return
-              }
-              console.log("Arquivo removido com sucesso!")
-            })
-        ).catch(error=> console.error(error));
+        const result = await database.select("arquivo").from(`${baseInformation.table}`).where({codigoArquivo});
+        
+        const params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: result[0]["arquivo"]
+        };
+        const resultado = await s3.deleteObject(params, function(err, data) {
+            if (err) {
+                console.log(err);
+            }
+            else {
+                console.log(`Arquivo apagado com sucesso.`);
+            }
+        });
         // Apagar Arquivo banco
         database.delete().from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
             response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
         }).catch(error => console.error(error));
+
+            // })
+            
+            // fs.unlink(`uploads/${result[0]["arquivo"]}`, (err) => {
+            //   if (err) {
+            //     console.error(err)
+            //     return
+            //   }
+            //   console.log("Arquivo removido com sucesso!")
+            // })
+        // }).catch(error=> console.error(error));
+        // Apagar Arquivo banco
+        // database.delete().from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
+        //     response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
+        // }).catch(error => console.error(error));
     }
     deleteByCodigoUsuario(request, response) {
 
@@ -105,6 +130,30 @@ class FileController {
         database.select("arquivo","cripto").from(`${baseInformation.table}`).where({arquivo}).then(result=> {
             response.json(result)
         }).catch(error => console.error(error));
+    }
+    async deleFilesS3ByUser(codigoUsuario) {
+        const results = await database.select("arquivo").from(`${baseInformation.table}`).where({codigoUsuario:codigoUsuario});
+        
+        if(results.length>0) {
+            let keys = []
+            results.map(d => {
+                keys.push({Key:d.arquivo})
+            });
+
+            const params = {
+              Bucket: process.env.BUCKET_NAME,
+              Delete: { // required
+                Objects: keys
+              }
+            }
+            const resultado = await s3.deleteObjects(params, function(err, data) {
+              if (err) console.log(err, err.stack); // an error occurred
+              else     console.log("Arquivos deletados com sucesso!");           // successful response
+            });
+            return resultado;
+        }
+        return true
+
     }
 }
 
