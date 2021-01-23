@@ -10,10 +10,6 @@ const multer  = require('multer');
 const aws = require("aws-sdk");
 const multerS3 = require("multer-s3");
 
-// //Auht
-// const passport = require("passport");
-// const session = require("express-session");
-
 //Controladores
 const UserController = require("../controllers/UserController");
 const FileController = require("../controllers/FileController");
@@ -126,7 +122,7 @@ router.get('/log/:arquivo', async(req, res) => {
     res.write("Não existem registros para o arquivo:" + arquivo);
   }
   
-  res.end();// Set disposition and send it.
+  res.end();
 });
 
 
