@@ -56,7 +56,7 @@ class FileController {
         if(request.file) {
             const arquivo = request.file.filename;
             const cripto = Crypto.encrypt(arquivo);
-            values = {nome,arquivo,cripto}
+            values = {nome:nome,arquivo:arquivo,cripto:cripto}
 
             //Remover Arquivo
             const params = {
