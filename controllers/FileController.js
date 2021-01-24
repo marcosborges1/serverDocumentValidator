@@ -51,7 +51,7 @@ class FileController {
     update(request, response) {
 
         let values = null;
-        const {nome} = request.body;
+        const {nome, arquivoAtual} = request.body;
 
         if(request.file) {
             const arquivo = request.file.filename;
@@ -59,13 +59,26 @@ class FileController {
             values = {nome,arquivo,cripto}
 
             //Remover Arquivo
-            fs.unlink(`uploads/${request.body.arquivoAtual}`, (err) => {
-              if (err) {
-                console.error(err)
-                return
-              }
-              console.log("Arquivo removido com sucesso!")
-            })
+            const params = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: arquivoAtual
+            };
+            const resultado = await s3.deleteObject(params, function(err, data) {
+                if (err) {
+                    console.log(err);
+                }
+                else {
+                    console.log(`Arquivo apagado com sucesso.`);
+                }
+            });
+
+            // fs.unlink(`uploads/${request.body.arquivoAtual}`, (err) => {
+            //   if (err) {
+            //     console.error(err)
+            //     return
+            //   }
+            //   console.log("Arquivo removido com sucesso!")
+            // })
 
         }
         else {
