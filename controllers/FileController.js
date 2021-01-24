@@ -52,12 +52,12 @@ class FileController {
 
         let values = null;
         const {nome, arquivoAtual} = request.body;
+        const {codigoArquivo} = request.params;
 
         if(request.file) {
-            const arquivo = request.file.filename;
+            const arquivo = request.file.key;
+            const url = request.file.location;
             const cripto = Crypto.encrypt(arquivo);
-            values = {nome:nome,arquivo:arquivo,cripto:cripto}
-
             //Remover Arquivo
             const params = {
                 Bucket: process.env.BUCKET_NAME,
@@ -72,6 +72,10 @@ class FileController {
                 }
             });
 
+            database.update({nome:nome,arquivo:arquivo,cripto:cripto,url:url}).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
+                response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
+            }).catch(error => console.error(error));
+
             // fs.unlink(`uploads/${request.body.arquivoAtual}`, (err) => {
             //   if (err) {
             //     console.error(err)
@@ -82,14 +86,14 @@ class FileController {
 
         }
         else {
-            values = {nome}
+            database.update({nome:nome}).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
+                response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
+            }).catch(error => console.error(error));
         }
         
-        const {codigoArquivo} = request.params;
+        
         // const {nome,arquivo,cripto} = request.body;
-        database.update(values).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
-            response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
-        }).catch(error => console.error(error));
+        
     }
     async delete(request, response) {
 
