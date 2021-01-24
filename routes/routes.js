@@ -105,7 +105,7 @@ router.post('/validacoesPorArquivo', async(req, res)=> {
 router.get('/log/:arquivo', async(req, res) => {
   const {arquivo} = req.params;
   const validations = await validation.scan({ arquivo: { contains: `${arquivo}`}}).exec()
-  res.setHeader('Content-disposition', 'attachment; filename=Log-'+ new Date().toLocaleString('pt-BR')+'.log');
+  res.setHeader('Content-disposition', 'attachment; filename=Log-'+ new Date().toLocaleString('pt-BR',{ timeZone: 'America/Sao_Paulo' })+'.log');
   res.setHeader('Content-type', 'text/plain');
   res.charset = 'UTF-8';
 
@@ -115,7 +115,7 @@ router.get('/log/:arquivo', async(req, res) => {
     res.write("Validação | Motivação | Horário\n")
     validations.map(r=> {
       const data = new Date(r.createdAt);
-      res.write(r.validacao+"\t|\t"+r.motivacao+"\t|\t"+data.toLocaleString('pt-BR')+"\n")
+      res.write(r.validacao+"\t|\t"+r.motivacao+"\t|\t"+data.toLocaleString('pt-BR',{ timeZone: 'America/Sao_Paulo' })+"\n")
     })
   }
   else {
