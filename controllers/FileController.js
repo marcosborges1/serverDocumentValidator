@@ -48,7 +48,7 @@ class FileController {
             response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
         }).catch(error => console.error(error));
     }
-    update(request, response) {
+    async update(request, response) {
 
         let values = null;
         const {nome, arquivoAtual} = request.body;
