@@ -16,11 +16,11 @@ app.use(express.static('public'));
 const database = require("./database/connection");
 
 
-app.get("/", async (request, response)=> {
-  const res = await database.select("*").from(`usuario`).then(result=> {
-    response.json(result)
+// app.get("/", (request, response)=> {response.send("<h4>Servidor Funcionando...</h4>")});
+app.get("/", (request, response)=> {
+    database.select("*").from(`usuario`).then(result=> {
+      response.json(result)
   })
-  response.send(res);
 });
 
 app.listen(config.port, () => {
