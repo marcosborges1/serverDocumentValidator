@@ -13,8 +13,15 @@ app.use(cookieParser());
 app.use(router); // Utilização das rotas
 app.use(express.static('public'));
 
+const database = require("./database/connection");
 
-app.get("/", (request, response)=> {response.send("<h4>Servidor Funcionando...</h4>")});
+
+app.get("/", async (request, response)=> {
+  const res = await database.select("*").from(`usuario`).then(result=> {
+    response.json(result)
+  })
+  response.send(res);
+});
 
 app.listen(config.port, () => {
   console.log(`Servidor rodando na porta ${config.port}`);
