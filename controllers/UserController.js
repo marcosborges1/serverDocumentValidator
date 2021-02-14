@@ -2,6 +2,7 @@ const database = require("../database/connection");
 const baseInformation = {table:"usuario", modulus: "Usuário"};
 const jwt = require('jsonwebtoken');
 const FileController = require("./FileController");
+const PhoneController = require("./PhoneController");
 
 class UserController {
 
@@ -18,18 +19,29 @@ class UserController {
             response.json(result)
         }).catch(error=> console.error(error));
     }
+    getByCodigoWithPhones(request, response) {
+
+        const {codigoUsuario} = request.params;
+        database.select("*").from(`${baseInformation.table}`).where({codigoUsuario}).then(async(result)=> {
+            await PhoneController.getByCodigoUsuario(request, response).then(res=> console.log(res))
+            response.json(result)
+        }).catch(error=> console.error(error));
+    }
     insert(request, response) {
 
-        const {nome,identificacao, email, senha, tipo} = request.body;
-        database.insert({nome,identificacao, email, senha, tipo}).into(`${baseInformation.table}`).then(result=> {
-            response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
-        }).catch(error => console.error(error));
+        const {nome,apelido, email, senha, tipo} = request.body;
+        database.insert({nome,apelido, email, senha, tipo}).into(`${baseInformation.table}`).then(result=> {
+            response.json({
+                codigoUsuario:result[0],
+                message:`${baseInformation.modulus} cadastrado com sucesso!`
+            })
+        }).catch(error=> console.error(error));
     }
     update(request, response) {
 
         const {codigoUsuario} = request.params;
-        const {nome,identificacao, email, senha, tipo } = request.body;
-        database.update({nome,identificacao, email, senha, tipo}).from(`${baseInformation.table}`).where({codigoUsuario}).then(usuario=> {
+        const {nome,apelido, email, senha, tipo } = request.body;
+        database.update({nome,apelido, email, senha, tipo}).from(`${baseInformation.table}`).where({codigoUsuario}).then(usuario=> {
             response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
         }).catch(error => console.error(error));
     }

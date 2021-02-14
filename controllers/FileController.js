@@ -2,11 +2,18 @@ const database = require("../database/connection");
 const baseInformation = {table:"arquivo", modulus: "Arquivo"};
 const Crypto = require("../utils/Crypto")
 const fs = require('fs')
-const aws = require("aws-sdk");
-const s3 = new aws.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+// const aws = require("aws-sdk");
+// const s3 = new aws.S3({
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+// });
+
+const {Storage} = require('@google-cloud/storage');
+const gcobj = new Storage({
+    projectId: process.env.GCLOUD_PROJECT,
+    keyFilename: process.env.GCS_KEYFILE
 });
+const gcsBucket = gcobj.bucket(process.env.GCS_BUCKET);
 
 class FileController {
 
@@ -32,16 +39,21 @@ class FileController {
         }).catch(error=> console.error(error));
     }
 
-    insert(request, response) {
-
-        // console.log(request.file);
-        // console.log(request.body);
+    async insert(request, response) {
+        
        const {codigoUsuario, nome} = request.body;
        //Local
        // const arquivo = request.file.filename;
-       //Nuvem
-       const arquivo = request.file.key;
-       const url = request.file.location;
+       //Nuvem AWS
+       // const arquivo = request.file.key;
+       // const url = request.file.location;
+
+       //Nuvel GAE
+        //console.log(request.file);
+
+       const arquivo = request.file.filename;
+       let url = request.file.linkUrl;
+       url = url.replace("cloud.google","googleapis");
 
        const cripto = Crypto.encrypt(arquivo);
         database.insert({codigoUsuario, nome, arquivo, cripto, url}).into(`${baseInformation.table}`).then(result=> {
@@ -55,22 +67,27 @@ class FileController {
         const {codigoArquivo} = request.params;
 
         if(request.file) {
-            const arquivo = request.file.key;
-            const url = request.file.location;
+            const arquivo = request.file.filename;
+            let url = request.file.linkUrl;
+            url = url.replace("cloud.google","googleapis");
             const cripto = Crypto.encrypt(arquivo);
+
+            //S3
+            // const params = {
+            //     Bucket: process.env.BUCKET_NAME,
+            //     Key: arquivoAtual
+            // };
+            // const resultado = await s3.deleteObject(params, function(err, data) {
+            //     if (err) {
+            //         console.log(err);
+            //     }
+            //     else {
+            //         console.log(`Arquivo apagado com sucesso.`);
+            //     }
+            // });
+
             //Remover Arquivo
-            const params = {
-                Bucket: process.env.BUCKET_NAME,
-                Key: arquivoAtual
-            };
-            const resultado = await s3.deleteObject(params, function(err, data) {
-                if (err) {
-                    console.log(err);
-                }
-                else {
-                    console.log(`Arquivo apagado com sucesso.`);
-                }
-            });
+            gcsBucket.file(arquivoAtual).delete();
 
             database.update({nome:nome,arquivo:arquivo,cripto:cripto,url:url}).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
                 response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
@@ -102,20 +119,25 @@ class FileController {
         //Remover Arquivo
         const result = await database.select("arquivo").from(`${baseInformation.table}`).where({codigoArquivo});
         
-        const params = {
-            Bucket: process.env.BUCKET_NAME,
-            Key: result[0]["arquivo"]
-        };
-        const resultado = await s3.deleteObject(params, function(err, data) {
-            if (err) {
-                console.log(err);
-            }
-            else {
-                console.log(`Arquivo apagado com sucesso.`);
-            }
-        });
+        //Remover S3
+        // const params = {
+        //     Bucket: process.env.BUCKET_NAME,
+        //     Key: result[0]["arquivo"]
+        // };
+        // const resultado = await s3.deleteObject(params, function(err, data) {
+        //     if (err) {
+        //         console.log(err);
+        //     }
+        //     else {
+        //         console.log(`Arquivo apagado com sucesso.`);
+        //     }
+        // });
+        //Remover Arquivo
+        
+        gcsBucket.file(result[0]["arquivo"]).delete();
+
         // Apagar Arquivo banco
-        database.delete().from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
+         database.delete().from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
             response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
         }).catch(error => console.error(error));
 
