@@ -90,11 +90,13 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 
 const multerGoogleStorage = require("multer-cloud-storage");
 const uploadGAE = multer({
-  storage: multerGoogleStorage.storageEngine({
-    filename: function(req, file, cb){
-        cb(null,`Arquivo-` + Date.now() + path.extname(file.originalname));
-    }
-  })
+  storage: multerGoogleStorage.storageEngine(
+    // {
+    //   filename: function(req, file, cb){
+    //     cb(null,`Arquivo-` + Date.now() + path.extname(file.originalname));
+    //   }
+    // }
+  )
 }).single("arquivo");
 
 //End - GAE
