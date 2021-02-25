@@ -51,16 +51,16 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 
 //Local
 
-// const storage = multer.diskStorage({
-//    destination: "uploads/",
-//    filename: function(req, file, cb){
-//       cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
-//    }
-// });
-// const upload = multer({
-//   storage: storage,
-//   limits:{fileSize: 1000000},
-// }).single("arquivo");
+const localStorage = multer.diskStorage({
+   destination: "uploads/",
+   filename: function(req, file, cb){
+      cb(null,"Temp-" + Date.now() + path.extname(file.originalname));
+   }
+});
+const localUpload = multer({
+  storage: localStorage,
+  limits:{fileSize: 1000000},
+}).single("arquivo");
 
 //End - Local
 
@@ -91,11 +91,12 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 const multerGoogleStorage = require("multer-cloud-storage");
 const uploadGAE = multer({
   storage: multerGoogleStorage.storageEngine(
-    // {
-    //   filename: function(req, file, cb){
-    //     cb(null,`Arquivo-` + Date.now() + path.extname(file.originalname));
-    //   }
-    // }
+    {
+      keyFilename:"./keys.json",
+      filename: function(req, file, cb){
+        cb(null,`Arquivo-` + Date.now() + path.extname(file.originalname));
+      }
+    }
   )
 }).single("arquivo");
 
@@ -118,9 +119,27 @@ router.post(`/validacao`, async(req, res)=> {
 
 router.post(`/verificarArquivo`, FileController.verifyFileOnDb);
 
+router.post(`/verificarArquivoParaValidacao`, localUpload, FileController.verifyFileOnDbToValidation);
+
 router.get('/vervalidacoes', async(req, res)=> {
   const validations = await validation.query().run().then(result=>result)
   return res.json({validations});
+});
+
+router.get('/deletarValidacaoPorArquivo/:arquivo', async(req, res)=> {
+  const {arquivo} = req.params;
+  const validations = await validation.query().run().then(result=>result);
+  const resultValidation = validations.entities.filter(r=>r.arquivo==arquivo);
+  if(resultValidation && resultValidation.length>0) {
+    resultValidation.map(r=> {
+      validation.delete(+r.id)
+        .then((response) => {
+            res.json(response);
+        })
+        .catch(err => res.status(400).json("erro"+ err));
+    })
+  }
+
 });
 
 router.post('/validacoesPorArquivo', async(req, res)=> {

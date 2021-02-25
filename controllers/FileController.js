@@ -1,7 +1,13 @@
 const database = require("../database/connection");
 const baseInformation = {table:"arquivo", modulus: "Arquivo"};
-const Crypto = require("../utils/Crypto")
-const fs = require('fs')
+const Crypto = require("../utils/Crypto");
+const crypto = require("crypto");
+const fs = require('fs');
+const validation = require("../models/validacao");
+const path = require("path")
+
+const algorithm = 'aes-256-ctr';
+const password = 'd6F3Efeq';
 // const aws = require("aws-sdk");
 // const s3 = new aws.S3({
 //     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -51,12 +57,34 @@ class FileController {
        //Nuvel GAE
         //console.log(request.file);
 
+        // console.log(request.file);
+
        const arquivo = request.file.filename;
        let url = request.file.linkUrl;
        url = url.replace("cloud.google","googleapis");
+       const requ = require('request');
 
+       const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
+       await sleep(1000) 
+       const tmpFolder = path.resolve(__dirname, "../");
+       const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
+       await sleep(1000)
+       
+        const content = await fs.promises.readFile(tmpFolder1);
+        const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+        // console.log(ByteToStringMD5Hash);
+        const tmpFolder2 = path.resolve(tmpFolder, "Arquivo-1614207755149.png");  
+        const content2 = await fs.promises.readFile(tmpFolder2);
+        const ByteToStringMD5Hash2 = Buffer.from(content2).toString('utf8');
+        // console.log(ByteToStringMD5Hash2);
+        
+        let cipher = crypto.createCipher(algorithm,password);
+        const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+        // let cipher2 = crypto.createCipher(algorithm,password);
+        // const hash2 = cipher2.update(ByteToStringMD5Hash2,'utf8','hex');
+       
        const cripto = Crypto.encrypt(arquivo);
-        database.insert({codigoUsuario, nome, arquivo, cripto, url}).into(`${baseInformation.table}`).then(result=> {
+        database.insert({codigoUsuario, nome, arquivo, cripto, url, hash}).into(`${baseInformation.table}`).then(result=> {
             response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
         }).catch(error => console.error(error));
     }
@@ -67,10 +95,25 @@ class FileController {
         const {codigoArquivo} = request.params;
 
         if(request.file) {
+            const validations = await validation.query().run().then(result=>result);
             const arquivo = request.file.filename;
             let url = request.file.linkUrl;
             url = url.replace("cloud.google","googleapis");
             const cripto = Crypto.encrypt(arquivo);
+
+            const requ = require('request');
+
+            const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
+            await sleep(1000) 
+            const tmpFolder = path.resolve(__dirname, "../");
+            const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
+            await sleep(1000)
+            
+            const content = await fs.promises.readFile(tmpFolder1);
+            const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+            
+            let cipher = crypto.createCipher(algorithm,password);
+            const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
 
             //S3
             // const params = {
@@ -88,8 +131,18 @@ class FileController {
 
             //Remover Arquivo
             gcsBucket.file(arquivoAtual).delete();
+            const resultValidation = validations.entities.filter(r=>r.arquivo==arquivoAtual);
+            if(resultValidation && resultValidation.length>0) {
+                resultValidation.map(r=> {
+                validation.delete(+r.id)
+                    .then((result) => {
+                        console.log(result);
+                    })
+                    .catch(err => console.log("erro"+ err));
+                })
+            }
 
-            database.update({nome:nome,arquivo:arquivo,cripto:cripto,url:url}).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
+            database.update({nome:nome,arquivo:arquivo,cripto:cripto,url:url, hash:hash}).from(`${baseInformation.table}`).where({codigoArquivo}).then(usuario=> {
                 response.json({message:`${baseInformation.modulus} alterado com sucesso!`})
             }).catch(error => console.error(error));
 
@@ -115,6 +168,7 @@ class FileController {
     async delete(request, response) {
 
         const {codigoArquivo} = request.params;
+        const validations = await validation.query().run().then(result=>result);
 
         //Remover Arquivo
         const result = await database.select("arquivo").from(`${baseInformation.table}`).where({codigoArquivo});
@@ -134,8 +188,18 @@ class FileController {
         // });
         //Remover Arquivo
         
-        gcsBucket.file(result[0]["arquivo"]).delete();
+        await gcsBucket.file(result[0]["arquivo"]).delete();
 
+        const resultValidation = validations.entities.filter(r=>r.arquivo==result[0]["arquivo"]);
+        if(resultValidation && resultValidation.length>0) {
+            resultValidation.map(r=> {
+            validation.delete(+r.id)
+                .then((result) => {
+                    console.log(result);
+                })
+                .catch(err => console.log("erro"+ err));
+            })
+        }
         // Apagar Arquivo banco
          database.delete().from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
             response.json({message:`${baseInformation.modulus} excluído com sucesso!`})
@@ -165,35 +229,71 @@ class FileController {
     }
     verifyFileOnDb(request, response) {
 
-       const {arquivo} = request.body;
-        database.select("arquivo","cripto").from(`${baseInformation.table}`).where({arquivo}).then(result=> {
-            response.json(result)
-        }).catch(error => console.error(error));
+        const {arquivo} = request.body;
+         database.select("arquivo","cripto").from(`${baseInformation.table}`).where({arquivo}).then(result=> {
+             response.json(result)
+         }).catch(error => console.error(error));
     }
+
+    async verifyFileOnDbToValidation(request, response) {
+
+        if(request.file) {
+
+            const folderBase = path.resolve(__dirname, "../");
+            const tempFolder = path.resolve(folderBase, request.file.path);  
+        
+            const content = await fs.promises.readFile(tempFolder);
+            const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+            
+            let cipher = crypto.createCipher(algorithm,password);
+            const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+            database.select("arquivo","cripto","hash").from(`${baseInformation.table}`).where({hash}).then(result=> {
+                response.json(result)
+             }).catch(error => console.error(error));
+    
+        }
+        
+    }
+
+
     async deleFilesS3ByUser(codigoUsuario) {
         const results = await database.select("arquivo").from(`${baseInformation.table}`).where({codigoUsuario:codigoUsuario});
-        
+        const validations = await validation.query().run().then(result=>result);
+
         if(results.length>0) {
             let keys = []
             results.map(d => {
-                keys.push({Key:d.arquivo})
+                gcsBucket.file(d.arquivo).delete();
+                // keys.push({Key:d.arquivo})
+                const resultValidation = validations.entities.filter(r=>r.arquivo==d.arquivo);
+                if(resultValidation && resultValidation.length>0) {
+                    resultValidation.map(r=> {
+                    validation.delete(+r.id)
+                        .then((result) => {
+                            console.log(result);
+                        })
+                        .catch(err => console.log("erro"+ err));
+                    })
+                }
             });
 
-            const params = {
-              Bucket: process.env.BUCKET_NAME,
-              Delete: { // required
-                Objects: keys
-              }
-            }
-            const resultado = await s3.deleteObjects(params, function(err, data) {
-              if (err) console.log(err, err.stack); // an error occurred
-              else     console.log("Arquivos deletados com sucesso!");           // successful response
-            });
-            return resultado;
+            // const params = {
+            //   Bucket: process.env.BUCKET_NAME,
+            //   Delete: { // required
+            //     Objects: keys
+            //   }
+            // }
+            // const resultado = await s3.deleteObjects(params, function(err, data) {
+            //   if (err) console.log(err, err.stack); // an error occurred
+            //   else     console.log("Arquivos deletados com sucesso!");           // successful response
+            // });
+            // return resultado;
         }
         return true
 
     }
 }
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 module.exports = new FileController();

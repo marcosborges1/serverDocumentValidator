@@ -14,7 +14,7 @@ server-document-validator-12-a9d6c087be87.json
 
 # production
 /build
-
+/uploads
 # misc
 .DS_Store
 .env
