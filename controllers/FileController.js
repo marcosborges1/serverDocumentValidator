@@ -25,14 +25,14 @@ class FileController {
 
     list(request, response) {
 
-        database.select("*").from(`${baseInformation.table}`).then(result=> {
+        database.select("codigoArquivo","codigoUsuario","nome","arquivo","cripto","url").from(`${baseInformation.table}`).then(result=> {
             response.json(result)
         }).catch(error => console.error(error));
     }
     getByCodigo(request, response) {
 
         const {codigoArquivo} = request.params;
-        database.select("*").from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
+        database.select("codigoArquivo","codigoUsuario","nome","arquivo","cripto","url").from(`${baseInformation.table}`).where({codigoArquivo}).then(result=> {
             response.json(result)
         }).catch(error=> console.error(error));
     }
@@ -40,7 +40,7 @@ class FileController {
     getByCodigoUsuario(request, response) {
 
         const {codigoUsuario} = request.params;
-        database.select("*").from(`${baseInformation.table}`).where({codigoUsuario}).then(result=> {
+        database.select("codigoArquivo","codigoUsuario","nome","arquivo","cripto","url").from(`${baseInformation.table}`).where({codigoUsuario}).then(result=> {
             response.json(result)
         }).catch(error=> console.error(error));
     }
@@ -59,31 +59,46 @@ class FileController {
 
         // console.log(request.file);
 
-       const arquivo = request.file.filename;
-       let url = request.file.linkUrl;
-       url = url.replace("cloud.google","googleapis");
-       const requ = require('request');
+        const arquivo = request.file.filename;
 
-       const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
-       await sleep(1000) 
-       const tmpFolder = path.resolve(__dirname, "../");
-       const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
-       await sleep(1000)
-       
-        const content = await fs.promises.readFile(tmpFolder1);
+        const dir = path.resolve(__dirname, "../");
+        const tmpFolder = path.resolve(dir, request.file.path);  
+
+        const content = await fs.promises.readFile(tmpFolder);
         const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
-        // console.log(ByteToStringMD5Hash);
-        const tmpFolder2 = path.resolve(tmpFolder, "Arquivo-1614207755149.png");  
-        const content2 = await fs.promises.readFile(tmpFolder2);
-        const ByteToStringMD5Hash2 = Buffer.from(content2).toString('utf8');
-        // console.log(ByteToStringMD5Hash2);
+
+        gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
+            if(err) {
+                console.log("Erro no upload!");
+            }
+            if(file) {
+                console.log("Upload feito com sucesso!");
+            }
+            
+        })
+
+    //    let url = request.file.linkUrl;
+    //    url = url.replace("cloud.google","googleapis");
+    //    const requ = require('request');
+
+    //    const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
+    //    await sleep(1000) 
+    //    const tmpFolder = path.resolve(__dirname, "../");
+    //    const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
+    //    await sleep(1000)
+       
+        // const content = await fs.promises.readFile(tmpFolder1);
+        // const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
         
+       
+    
+    //Cifra
         let cipher = crypto.createCipher(algorithm,password);
         const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
-        // let cipher2 = crypto.createCipher(algorithm,password);
-        // const hash2 = cipher2.update(ByteToStringMD5Hash2,'utf8','hex');
+        const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
        
-       const cripto = Crypto.encrypt(arquivo);
+        //Salvar no Banco
+        const cripto = Crypto.encrypt(arquivo);
         database.insert({codigoUsuario, nome, arquivo, cripto, url, hash}).into(`${baseInformation.table}`).then(result=> {
             response.json({message:`${baseInformation.modulus} cadastrado com sucesso!`})
         }).catch(error => console.error(error));
@@ -97,23 +112,34 @@ class FileController {
         if(request.file) {
             const validations = await validation.query().run().then(result=>result);
             const arquivo = request.file.filename;
-            let url = request.file.linkUrl;
-            url = url.replace("cloud.google","googleapis");
-            const cripto = Crypto.encrypt(arquivo);
 
-            const requ = require('request');
+            const dir = path.resolve(__dirname, "../");
+            const tmpFolder = path.resolve(dir, request.file.path);  
 
-            const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
-            await sleep(1000) 
-            const tmpFolder = path.resolve(__dirname, "../");
-            const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
-            await sleep(1000)
-            
-            const content = await fs.promises.readFile(tmpFolder1);
+            const content = await fs.promises.readFile(tmpFolder);
             const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+
+            gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
+                console.log("Upload feito com sucesso!");
+            })
             
+            const cripto = Crypto.encrypt(arquivo);
             let cipher = crypto.createCipher(algorithm,password);
             const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+            const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
+
+            // const requ = require('request');
+
+            // const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
+            // await sleep(1000) 
+            // const tmpFolder = path.resolve(__dirname, "../");
+            // const tmpFolder1 = path.resolve(tmpFolder, fileContent.path);  
+            // await sleep(1000)
+            
+            // const content = await fs.promises.readFile(tmpFolder1);
+            // const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+            
+           
 
             //S3
             // const params = {
@@ -238,7 +264,7 @@ class FileController {
     async verifyFileOnDbToValidation(request, response) {
 
         if(request.file) {
-
+            console.log("Arquivo feito upload!")
             const folderBase = path.resolve(__dirname, "../");
             const tempFolder = path.resolve(folderBase, request.file.path);  
         
