@@ -52,7 +52,7 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 //Local
 
 const localStorage = multer.diskStorage({
-   destination: "uploads/",
+   destination: "tempa/",
    filename: function(req, file, cb){
       cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
    }
