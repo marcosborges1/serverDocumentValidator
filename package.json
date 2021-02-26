@@ -36,6 +36,7 @@
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "promise-mysql": "^5.0.2",
+    "raw-body": "^2.4.1",
     "simple-crypto-js": "^3.0.0",
     "uuid": "^8.3.2"
   },

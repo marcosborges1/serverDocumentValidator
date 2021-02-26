@@ -52,7 +52,7 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 //Local
 
 const localStorage = multer.diskStorage({
-   destination: "tempa/",
+   destination: "uploads/",
    filename: function(req, file, cb){
       cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
    }
@@ -102,10 +102,10 @@ const uploadGAE = multer({
 
 //End - GAE
 
-// router.post('/inserirArquivo', uploadGAE, FileController.insert);
-router.post('/inserirArquivo', localUpload, FileController.insert);
+router.post('/inserirArquivo', uploadGAE, FileController.insert);
+// router.post('/inserirArquivo', localUpload, FileController.insert);
 
-router.put(`/atualizarArquivo/:codigoArquivo`, localUpload, FileController.update);
+router.put(`/atualizarArquivo/:codigoArquivo`, uploadGAE, FileController.update);
 
 router.get(`/listarArquivosPorUsuario/:codigoUsuario`, FileController.getByCodigoUsuario);
 router.delete(`/excluirArquivosPorUsuario/:codigoUsuario`, FileController.deleteByCodigoUsuario);

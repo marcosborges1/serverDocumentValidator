@@ -14,6 +14,8 @@ const password = 'd6F3Efeq';
 //     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
 // });
 
+const getRawBody = require('raw-body')
+
 const {Storage} = require('@google-cloud/storage');
 const gcobj = new Storage({
     projectId: process.env.GCLOUD_PROJECT,
@@ -61,24 +63,35 @@ class FileController {
 
         const arquivo = request.file.filename;
 
-        const dir = path.resolve(__dirname, "../");
-        const tmpFolder = path.resolve(dir, request.file.path);  
+        // const dir = path.resolve(__dirname, "../");
+        // const tmpFolder = path.resolve(dir, request.file.path);  
 
-        const content = await fs.promises.readFile(tmpFolder);
-        const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
-
-        gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
-            if(err) {
-                console.log("Erro no upload!");
-            }
-            if(file) {
-                console.log("Upload feito com sucesso!");
-            }
+        // const content = await fs.promises.readFile(tmpFolder);
+        // console.log(content);
+        // const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+        // console.log(ByteToStringMD5Hash);
+        // gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
+        //     if(err) {
+        //         console.log("Erro no upload!");
+        //     }
+        //     if(file) {
+        //         console.log("Upload feito com sucesso!");
+        //     }
             
-        })
+        // })
+        
+        
+        
+        // let cipher = crypto.createCipher(algorithm,password);
+        // const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+        
 
-    //    let url = request.file.linkUrl;
-    //    url = url.replace("cloud.google","googleapis");
+        // let cipher = crypto.createCipher(algorithm,password);
+        // const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+        // const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
+        // let url = request.file.linkUrl;
+        // url = url.replace("cloud.google","googleapis");
+       
     //    const requ = require('request');
 
     //    const fileContent = await requ(url).pipe(fs.createWriteStream(arquivo))
@@ -93,9 +106,13 @@ class FileController {
        
     
     //Cifra
+        const file = await gcsBucket.file(arquivo).createReadStream();
+        const buffer = await getRawBody(file); 
+        const ByteToStringMD5Hash = Buffer.from(buffer).toString('utf8');
+
         let cipher = crypto.createCipher(algorithm,password);
         const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
-        const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
+        const url = request.file.linkUrl.replace("cloud.google","googleapis");
        
         //Salvar no Banco
         const cripto = Crypto.encrypt(arquivo);
@@ -113,20 +130,20 @@ class FileController {
             const validations = await validation.query().run().then(result=>result);
             const arquivo = request.file.filename;
 
-            const dir = path.resolve(__dirname, "../");
-            const tmpFolder = path.resolve(dir, request.file.path);  
+            // const dir = path.resolve(__dirname, "../");
+            // const tmpFolder = path.resolve(dir, request.file.path);  
 
-            const content = await fs.promises.readFile(tmpFolder);
-            const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+            // const content = await fs.promises.readFile(tmpFolder);
+            // const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
 
-            gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
-                console.log("Upload feito com sucesso!");
-            })
+            // gcsBucket.upload(tmpFolder, function(err, file, apiResponse) {
+            //     console.log("Upload feito com sucesso!");
+            // })
             
-            const cripto = Crypto.encrypt(arquivo);
-            let cipher = crypto.createCipher(algorithm,password);
-            const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
-            const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
+            // const cripto = Crypto.encrypt(arquivo);
+            // let cipher = crypto.createCipher(algorithm,password);
+            // const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+            // const url = `https://storage.googleapis.com/document-validator-ufc-server/${arquivo}`;
 
             // const requ = require('request');
 
@@ -154,6 +171,15 @@ class FileController {
             //         console.log(`Arquivo apagado com sucesso.`);
             //     }
             // });
+
+            const cripto = Crypto.encrypt(arquivo);
+            const file = await gcsBucket.file(arquivo).createReadStream();
+            const buffer = await getRawBody(file); 
+            const ByteToStringMD5Hash = Buffer.from(buffer).toString('utf8');
+
+            let cipher = crypto.createCipher(algorithm,password);
+            const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+            const url = request.file.linkUrl.replace("cloud.google","googleapis");
 
             //Remover Arquivo
             gcsBucket.file(arquivoAtual).delete();
