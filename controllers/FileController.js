@@ -291,14 +291,23 @@ class FileController {
 
         if(request.file) {
             console.log("Arquivo feito upload!")
-            const folderBase = path.resolve(__dirname, "../");
-            const tempFolder = path.resolve(folderBase, request.file.path);  
-        
-            const content = await fs.promises.readFile(tempFolder);
-            const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
-            
+            const arquivo = request.file.filename;
+            const cripto = Crypto.encrypt(arquivo);
+            const file = await gcsBucket.file(arquivo).createReadStream();
+            const buffer = await getRawBody(file); 
+            const ByteToStringMD5Hash = Buffer.from(buffer).toString('utf8');
+
             let cipher = crypto.createCipher(algorithm,password);
             const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
+            
+            // const folderBase = path.resolve(__dirname, "../");
+            // const tempFolder = path.resolve(folderBase, request.file.path);  
+        
+            // const content = await fs.promises.readFile(tempFolder);
+            // const ByteToStringMD5Hash = Buffer.from(content).toString('utf8');
+            
+            // let cipher = crypto.createCipher(algorithm,password);
+            // const hash = cipher.update(ByteToStringMD5Hash,'utf8','hex');
             database.select("arquivo","cripto","hash").from(`${baseInformation.table}`).where({hash}).then(result=> {
                 response.json(result)
              }).catch(error => console.error(error));

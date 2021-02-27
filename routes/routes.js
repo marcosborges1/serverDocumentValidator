@@ -51,16 +51,16 @@ router.get(`/logout`, verifyJWT, UserController.logout)
 
 //Local
 
-const localStorage = multer.diskStorage({
-   destination: "uploads/",
-   filename: function(req, file, cb){
-      cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
-   }
-});
-const localUpload = multer({
-  storage: localStorage,
-  limits:{fileSize: 1500000},
-}).single("arquivo");
+// const localStorage = multer.diskStorage({
+//    destination: "uploads/",
+//    filename: function(req, file, cb){
+//       cb(null,"Arquivo-" + Date.now() + path.extname(file.originalname));
+//    }
+// });
+// const localUpload = multer({
+//   storage: localStorage,
+//   limits:{fileSize: 1500000},
+// }).single("arquivo");
 
 //End - Local
 
@@ -121,7 +121,7 @@ router.post(`/validacao`, async(req, res)=> {
 
 router.post(`/verificarArquivo`, FileController.verifyFileOnDb);
 
-router.post(`/verificarArquivoParaValidacao`, localUpload, FileController.verifyFileOnDbToValidation);
+router.post(`/verificarArquivoParaValidacao`, uploadGAE, FileController.verifyFileOnDbToValidation);
 
 router.get('/vervalidacoes', async(req, res)=> {
   const validations = await validation.query().run().then(result=>result)
