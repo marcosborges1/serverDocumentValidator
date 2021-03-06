@@ -1,0 +1,13 @@
+runtime: nodejs14
+env_variables:
+  SECRET: marcosborges
+  host_db: 35.226.149.53
+  user_db: root
+  pass_db: doc-val-ufc-12
+  db: document_validator_ufc
+  
+  GCS_BUCKET: document-validator-ufc-server
+  GCLOUD_PROJECT: server-document-validator-12
+  GCS_KEYFILE: ./server-document-validator-12-a9d6c087be87.json
+  GOOGLE_APPLICATION_CREDENTIALS: ./server-document-validator-12-a9d6c087be87.json
+  CLOUD_SQL_CONNECTION_NAME: server-document-validator-12:us-central1:doc-val-ufc-12 

@@ -1,9 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-app.yaml
-keys.json
-server-document-validator-12-a9d6c087be87.json
+#app.yaml
+#keys.json
+#server-document-validator-12-a9d6c087be87.json
 
 /node_modules
 /.pnp
