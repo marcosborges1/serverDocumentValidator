@@ -1,0 +1,29 @@
+version: '3'
+services:
+    mysql:
+        image: mysql
+        environment:
+          MYSQL_USER: "root" 
+          MYSQL_ROOT_PASSWORD: "doc-val-ufc-12"
+          MYSQL_DATABASE: "document_validator_ufc"
+          image: mysql
+          cap_add: "SYS_NICE"
+        ports:
+          - "3306:3306"
+        networks:
+          - production-network
+    node:
+        build:
+            dockerfile: ./docker/api.dockerfile
+            context: .
+        image: italomarcos/api
+        container_name: api
+        ports:
+            - "80:80"
+        networks: 
+            - production-network
+        depends_on:
+            - "mysql"
+networks: 
+    production-network:
+        driver: bridge
