@@ -25,3 +25,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+app.yaml
+server-document-validator-12-a9d6c087be87.json
